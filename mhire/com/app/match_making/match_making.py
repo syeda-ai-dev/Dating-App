@@ -7,10 +7,32 @@ import os
 import logging
 import time
 import asyncio
+import math
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """
+    Calculate distance between two points using Haversine formula
+    Returns distance in kilometers
+    """
+    R = 6371  # Earth's radius in kilometers
+
+    lat1_rad = math.radians(lat1)
+    lon1_rad = math.radians(lon1)
+    lat2_rad = math.radians(lat2)
+    lon2_rad = math.radians(lon2)
+
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+
+    a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    distance = R * c
+
+    return distance
 
 class LLMMatchMaking:
     def __init__(self, config):
@@ -61,38 +83,48 @@ class LLMMatchMaking:
     
     def calculate_llm_match_score(self, my_data: Dict[str, Any], other_user: Dict[str, Any], strict: bool = True) -> float:
         """
-        Use LLM to calculate a more nuanced match score between users
-        
-        Args:
-            my_data: Current user's data
-            other_user: Other user's data
-            strict: If True, enforce strict compatibility rules
-            
-        Returns:
-            Match score between 0 and 100
+        Calculate match score between users based on gender preferences and location
         """
-        # Check if users are compatible based on gender preferences first
+        # Check basic compatibility first
         if not self.is_compatible(my_data, other_user, strict):
             return 0
-            
+        
         # Calculate gender preference match bonus
         gender_preference_bonus = 0
         my_interest = my_data.get("interestedIn")
         other_gender = other_user.get("gender")
-        
+    
         if my_interest == "GIRLS" and other_gender == "FEMALE":
-            gender_preference_bonus = 200  # Strong bonus for exact match
+            gender_preference_bonus = 200
         elif my_interest == "BOYS" and other_gender == "MALE":
-            gender_preference_bonus = 200  # Strong bonus for exact match
+            gender_preference_bonus = 200
         elif my_interest == "BOTH":
-            gender_preference_bonus = 50   # Smaller bonus for those who are open to both
-        
-        # For now, return just the gender bonus as base score since we're not using
-        # the traditional algorithm anymore
-        score = gender_preference_bonus
-        
-        logger.info(f"Match score for {other_user.get('name')} (gender: {other_gender}): {score}")
-        
+            gender_preference_bonus = 50
+
+        # Calculate distance-based score
+        distance_score = 0
+        my_lat = my_data.get("latitude")
+        my_lon = my_data.get("longitude")
+        other_lat = other_user.get("latitude")
+        other_lon = other_user.get("longitude")
+    
+        if all([my_lat, my_lon, other_lat, other_lon]):
+            distance = calculate_distance(my_lat, my_lon, other_lat, other_lon)
+            # Convert distance to a score (closer = higher score)
+            # Max score of 100 for distances under 5km
+            # Score decreases linearly up to 100km (0 points)
+            if distance <= 5:
+                distance_score = 100
+            elif distance <= 100:
+                distance_score = max(0, 100 * (1 - (distance - 5) / 95))
+    
+        # Combine scores (gender preference and distance)
+        # Weight: 70% gender preference, 30% distance
+        score = (0.7 * gender_preference_bonus) + (0.3 * distance_score)
+    
+        logger.info(f"Match score for {other_user.get('name')}: total={score:.1f} "
+                    f"(gender_bonus={gender_preference_bonus}, distance_score={distance_score:.1f})")
+    
         return score
     
     def is_compatible(self, my_data: Dict[str, Any], other_user: Dict[str, Any], strict: bool = True) -> bool:
