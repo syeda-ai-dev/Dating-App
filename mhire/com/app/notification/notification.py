@@ -33,19 +33,19 @@ class Notification:
         self.scheduler.start()
 
     async def generate_quote(self):
-        """Generate a creative dating suggestion quote"""
+        """Generate a creative dating suggestion quote in French"""
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"
         }
         prompts = [
-            "Give me a creative and unique dating suggestion that's not commonly mentioned.",
-            "Suggest an unusual but fun dating activity that creates memorable moments.",
-            "What's a romantic dating idea that doesn't cost much money?",
-            "Share a dating suggestion that involves nature or outdoors.",
-            "Provide a dating tip for couples looking to spice up their relationship.",
-            "What's a good first date idea that helps people connect genuinely?",
-            "Suggest a date activity that involves learning something new together."
+            "Donnez-moi une suggestion de rendez-vous créative et unique qui n'est pas souvent mentionnée.",
+            "Suggérez une activité de rendez-vous inhabituelle mais amusante qui crée des moments mémorables.",
+            "Quelle est une idée de rendez-vous romantique qui ne coûte pas beaucoup d'argent ?",
+            "Partagez une suggestion de rendez-vous qui implique la nature ou le plein air.",
+            "Fournissez un conseil de rendez-vous pour les couples qui cherchent à pimenter leur relation.",
+            "Quelle est une bonne idée de premier rendez-vous qui aide les gens à établir une connexion authentique ?",
+            "Suggérez une activité de rendez-vous qui implique d'apprendre quelque chose de nouveau ensemble."
         ]
         import random
         selected_prompt = random.choice(prompts)
@@ -54,7 +54,7 @@ class Notification:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are a dating coach specializing in creative date ideas. Provide a short, creative, and engaging dating suggestion. Keep it concise (maximum 2 sentences), romantic, and practical."
+                    "content": "Vous êtes un coach de rencontres spécialisé dans les idées de rendez-vous créatifs. Fournissez une suggestion de rendez-vous courte, créative et engageante. Gardez-la concise (maximum 2 phrases), romantique et pratique. Répondez UNIQUEMENT en français."
                 },
                 {
                     "role": "user",
